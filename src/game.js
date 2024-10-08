@@ -17,34 +17,37 @@ var config = {
 };
 
 var game = new Phaser.Game(config);
-var platform;
+var platforms;
 var player;
 var cursors;
 var score = 0;
 var scoreText;
-var gameOver;
+var gameOver = false;
+
 function collectStar (player, star)
 {
-    star.disableBody(true, true);
+    star.disableBody(true, true); 
     score += 10;
     scoreText.setText('Score: ' + score);
     if (stars.countActive(true) === 0)
         {
             stars.children.iterate(function (child) {
-    
+
                 child.enableBody(true, child.x, 0, true, true);
-    
+
             });
-    
+
             var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-    
+
             var bomb = bombs.create(x, 16, 'bomb');
             bomb.setBounce(1);
             bomb.setCollideWorldBounds(true);
             bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-    
+
         }
+
 }
+
 function hitBomb (player, bomb)
 {
     this.physics.pause();
@@ -54,47 +57,52 @@ function hitBomb (player, bomb)
     player.anims.play('turn');
 
     gameOver = true;
-    this.add.text(20, 300, 'Press r to restart', {
-        fontSize: '64px',
-        fill: '#aa0000',
-    
-    })
+    this.add.text(
+        this.cameras.main.centerX,
+        this.cameras.main.centerY,
+        'Press r to restart',{
+        fontSize:'64px',
+        fill:'#aa0000',
+    }).setOrigin(0.5,0.5)
 }
 
 function preload ()
 {
-    this.load.image('sky', '/assets/sky.png')
-    this.load.image('ground', '/assets/platform.png')
-    this.load.image('star','/assets/star.png')
-    this.load.image('bomb', '/assets/bomb.png')
+    this.load.image('sky', 'assets/sky.png');
+    this.load.image('ground', 'assets/platform.png');
+    this.load.image('star', 'assets/star.png');
+    this.load.image('bomb', 'assets/bomb.png');
     this.load.spritesheet('dude',
         '../assets/dude.png',
-        {frameWidth:32,frameHeight:48}
-    )
+        { frameWidth: 32, frameHeight: 48 });
 }
 
 function create ()
 {
     
-    this.add.image(400, 300, 'sky');
-    
-    // this.add.image(400, 300, 'star').setOrigin(0, 0);
-    // this.add.image(400, 300, 'star').setOrigin(1, 0);
-    // this.add.image(400, 300, 'star').setOrigin(0, 1);
-    // this.add.image(400, 300, 'star').setOrigin(1, 1);
+    this.add.image(400, 300, 'sky')
+    // this.add.image(400, 300, 'star').setOrigin(0,0)
+    // this.add.image(400, 300, 'star').setOrigin(0,1)
+    // this.add.image(400, 300, 'star').setOrigin(1,0)
+    // this.add.image(400, 300, 'star').setOrigin(1,1)
+    // this.add.image(400, 300, 'star').setOrigin(0.5,0.5)
     platforms = this.physics.add.staticGroup();
-    platforms.create(400, 586, 'ground').setScale(2).refreshBody();
+
+    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
     platforms.create(600, 400, 'ground');
     platforms.create(50, 250, 'ground');
     platforms.create(750, 220, 'ground');
-
-
+    
+    //player dude
     player = this.physics.add.sprite(100, 450, 'dude');
 
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
     this.physics.add.collider(player, platforms);
 
+
+    //player animations
     this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
@@ -115,6 +123,11 @@ function create ()
         repeat: -1
     });
 
+    cursors =this.input.keyboard.createCursorKeys();
+    reset_key = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    
+
+    //STARS
     stars = this.physics.add.group({
         key: 'star',
         repeat: 11,
@@ -126,24 +139,34 @@ function create ()
         child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
     
     });
-
     this.physics.add.collider(stars, platforms);
     this.physics.add.overlap(player, stars, collectStar, null, this);
 
+    //score
     scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
 
+    //bombs
     bombs = this.physics.add.group();
 
     this.physics.add.collider(bombs, platforms);
 
     this.physics.add.collider(player, bombs, hitBomb, null, this);
+
+    //restart 
     
-        
 }
 
 function update ()
 {
     cursors = this.input.keyboard.createCursorKeys();
+    if (gameOver){
+        if(reset_key.isDown){
+            gameOver = false;
+            this.scene.restart();
+        }
+        return
+    }
+    
     if (cursors.left.isDown)
         {
             player.setVelocityX(-160);
@@ -157,7 +180,8 @@ function update ()
             player.anims.play('right', true);
         }
         else
-        {
+    {
+        
             player.setVelocityX(0);
         
             player.anims.play('turn');
